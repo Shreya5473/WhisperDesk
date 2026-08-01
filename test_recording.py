@@ -1,10 +1,16 @@
 import time
 from src.whisperdesk.core.audio.recorder import AudioRecorder
+from src.whisperdesk.core.transcription.engine import TranscriptionEngine
 
 recorder = AudioRecorder()
-print("Recording for 3 seconds... speak now!")
+print("Loading Whisper model (first run downloads it, be patient)...")
+engine = TranscriptionEngine(model_size="base")
+
+print("Recording for 5 seconds... speak now!")
 recorder.start()
-time.sleep(3)
+time.sleep(5)
 audio = recorder.stop()
 
-print(f"Captured {len(audio)} samples ({len(audio) / recorder.sample_rate:.2f} seconds)")
+print("Transcribing...")
+text = engine.transcribe(audio, sample_rate=recorder.sample_rate)
+print(f"Transcript: {text}")
