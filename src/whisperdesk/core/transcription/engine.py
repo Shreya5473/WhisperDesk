@@ -14,17 +14,6 @@ class TranscriptionEngine:
     """Wraps a local Whisper model for converting audio arrays to text."""
 
     def __init__(self, model_size: str = "base", device: str = "cpu", compute_type: str = "int8"):
-        """
-        model_size: tiny, base, small, medium, large-v3 — bigger = more
-                    accurate but slower. 'base' is a good dev default.
-        device:     'cpu' or 'cuda' (if you have an NVIDIA GPU).
-        compute_type: 'int8' quantizes the model to run faster on CPU
-                      with a small accuracy tradeoff. Use 'float16' on GPU.
-        """
-        # Model loading is slow (reads weights from disk into memory) —
-        # we do it ONCE here, not per-transcription, and reuse the
-        # instance. This is why TranscriptionEngine is a class, not
-        # just a function: it holds expensive state.
         self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
 
     def transcribe(self, audio: np.ndarray, sample_rate: int = 16000) -> str:
@@ -34,9 +23,10 @@ class TranscriptionEngine:
 
         segments, info = self.model.transcribe(
             audio,
-            language=None,   # None = auto-detect language
-            vad_filter=True, # skips silent portions — faster + cleaner output
+            language="en",
+            vad_filter=True,
         )
+        
 
         # segments is a generator — Whisper yields text in chunks as it
         # processes the audio, rather than returning one giant string.

@@ -1,0 +1,39 @@
+"""
+Database connection and schema setup.
+
+Keeping schema creation separate from the repository (data access)
+keeps responsibilities clear: this file answers "what does the
+database look like", the repository answers "how do we use it".
+"""
+
+import sqlite3
+from pathlib import Path
+
+DB_PATH = Path.home() / ".whisperdesk" / "whisperdesk.db"
+
+
+def get_connection() -> sqlite3.Connection:
+
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    conn = sqlite3.connect(DB_PATH)
+    # row_factory lets us access columns by name (row["text"]) instead
+    # of position (row[2]) — much less error-prone as the schema grows.
+    conn.row_factory = sqlite3.Row
+
+    _create_schema(conn)
+    return conn
+
+
+def _create_schema(conn: sqlite3.Connection) -> None:
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS transcriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text TEXT NOT NULL,
+            arabic_text TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            app_name TEXT,
+            word_count INTEGER
+        )
+    """)
+    conn.commit()
