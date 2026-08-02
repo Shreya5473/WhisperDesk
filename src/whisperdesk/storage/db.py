@@ -13,12 +13,11 @@ DB_PATH = Path.home() / ".whisperdesk" / "whisperdesk.db"
 
 
 def get_connection() -> sqlite3.Connection:
-
+    """Open a connection to the WhisperDesk database, creating the
+    folder/file and schema on first run if they don't exist yet."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    conn = sqlite3.connect(DB_PATH)
-    # row_factory lets us access columns by name (row["text"]) instead
-    # of position (row[2]) — much less error-prone as the schema grows.
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
 
     _create_schema(conn)
