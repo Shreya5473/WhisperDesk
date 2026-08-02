@@ -1,11 +1,6 @@
 """
 Bridges background-thread events (hotkey presses, audio levels) into
 safe, main-thread GUI updates using Qt's Signal/Slot system.
-
-This is the answer to: "the hotkey listener and audio recorder run
-on background threads -- how do we safely update GUI widgets from
-there without crashing?" Signals can be emitted from ANY thread;
-Qt guarantees the connected slot function runs on the main thread.
 """
 
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -22,7 +17,6 @@ from src.whisperdesk.storage.snippet_repository import SnippetRepository
 
 
 class AppController(QObject):
-    # Signals -- declared at class level, this is Qt's required pattern.
     recording_started = pyqtSignal()
     recording_stopped = pyqtSignal()
     level_changed = pyqtSignal(float)
@@ -32,7 +26,7 @@ class AppController(QObject):
         super().__init__()
 
         self.recorder = AudioRecorder()
-        self.recorder.on_level = self._on_level  # background thread
+        self.recorder.on_level = self._on_level
 
         print("Loading Whisper model...")
         self.engine = TranscriptionEngine(model_size="base")
@@ -48,8 +42,8 @@ class AppController(QObject):
         self.expander = SnippetExpander(self.snippet_repo.get_all())
 
         self.hotkey_manager = HotkeyManager(hotkey="<cmd>+<shift>+<space>")
-        self.hotkey_manager.on_activate = self._on_hotkey_press      # background thread
-        self.hotkey_manager.on_deactivate = self._on_hotkey_release  # background thread
+        self.hotkey_manager.on_activate = self._on_hotkey_press
+        self.hotkey_manager.on_deactivate = self._on_hotkey_release
 
     def start(self) -> None:
         self.hotkey_manager.start()
@@ -57,10 +51,8 @@ class AppController(QObject):
     def stop(self) -> None:
         self.hotkey_manager.stop()
 
-    # --- Called on BACKGROUND threads. We only ever emit signals
-    # here -- never touch GUI objects directly from these methods. ---
-
     def _on_hotkey_press(self) -> None:
+        print("\n[Hotkey pressed] Recording...")
         self.recorder.start()
         self.recording_started.emit()
 
@@ -68,12 +60,16 @@ class AppController(QObject):
         self.level_changed.emit(level)
 
     def _on_hotkey_release(self) -> None:
+        print("[Hotkey released] Transcribing...")
         self.recording_stopped.emit()
         audio = self.recorder.stop()
 
         text_en = self.engine.transcribe(audio, sample_rate=self.recorder.sample_rate)
         text_en = self.expander.expand(text_en)
         text_ar = self.translator.translate(text_en) if text_en else ""
+
+        print(f"  EN: {text_en}")
+        print(f"  AR: {text_ar}")
 
         if text_en:
             self.history.save(text_en, arabic_text=text_ar)

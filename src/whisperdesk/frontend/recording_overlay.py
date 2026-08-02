@@ -1,14 +1,8 @@
 """
 Floating "recording in progress" overlay.
-
-Shown while the user holds the hotkey. Displays a pulsing red mic
-indicator and a live audio-level meter (bars that grow/shrink with
-how loud the incoming audio is) -- the same visual feedback pattern
-voice memo apps and VoiceInk use, so the user gets instant
-confirmation the app is actually listening.
 """
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QApplication
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QApplication
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QColor, QFont
 
@@ -21,22 +15,18 @@ ACCENT_RED = QColor("#FF3B30")
 BG_DARK = QColor(18, 18, 20, 235)
 
 
-class LevelMeter(QWidget):
-    """A row of bars that animate based on incoming audio level."""
-
+class LevelMeter(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._levels = [BAR_MIN_HEIGHT] * NUM_BARS
         self._targets = [BAR_MIN_HEIGHT] * NUM_BARS
         width = NUM_BARS * (BAR_WIDTH + BAR_GAP)
         self.setFixedSize(width, BAR_MAX_HEIGHT)
-
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._animate_step)
         self._timer.start(33)
 
     def set_level(self, level: float) -> None:
-        """level: 0.0 (silence) to 1.0 (loud)."""
         level = max(0.0, min(1.0, level))
         for i in range(NUM_BARS):
             center_weight = 1.0 - abs(i - NUM_BARS / 2) / (NUM_BARS / 2) * 0.5
@@ -45,8 +35,6 @@ class LevelMeter(QWidget):
             self._targets[i] = max(BAR_MIN_HEIGHT, min(BAR_MAX_HEIGHT, target))
 
     def _animate_step(self) -> None:
-        # "Lerp" (linear interpolation) -- ease toward target rather
-        # than jumping straight there.
         changed = False
         for i in range(NUM_BARS):
             diff = self._targets[i] - self._levels[i]
@@ -56,7 +44,7 @@ class LevelMeter(QWidget):
             else:
                 self._levels[i] = self._targets[i]
         if changed:
-            self.update()  # triggers paintEvent below
+            self.update()
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -69,23 +57,20 @@ class LevelMeter(QWidget):
             painter.drawRoundedRect(int(x), int(y), BAR_WIDTH, int(height), 2, 2)
 
 
-class RecordingOverlay(QWidget):
-
+class RecordingOverlay(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.Tool  # keeps it out of Cmd+Tab switcher
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)  # never steals focus
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(18, 12, 20, 12)
         layout.setSpacing(12)
 
-        self.mic_label = QLabel("\u25CF")  # solid dot as "recording" indicator
+        self.mic_label = QLabel("\u25CF")
         mic_font = QFont()
         mic_font.setPointSize(16)
         self.mic_label.setFont(mic_font)
@@ -126,6 +111,8 @@ class RecordingOverlay(QWidget):
         self.mic_label.setStyleSheet(f"color: {ACCENT_RED.name()};")
         self._pulse_timer.start(450)
         self.show()
+        self.raise_()
+        self.activateWindow()
 
     def show_transcribing(self) -> None:
         self._pulse_timer.stop()
