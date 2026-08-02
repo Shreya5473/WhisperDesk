@@ -36,4 +36,12 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             word_count INTEGER
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS snippets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trigger TEXT NOT NULL UNIQUE,
+            expansion TEXT NOT NULL,
+            case_sensitive INTEGER NOT NULL DEFAULT 0
+        )
+    """)
     conn.commit()
