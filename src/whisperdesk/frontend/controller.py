@@ -9,6 +9,7 @@ Handles TWO hotkeys:
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
+from src.whisperdesk.core.settings.settings_manager import SettingsManager
 from src.whisperdesk.core.audio.recorder import AudioRecorder
 from src.whisperdesk.core.transcription.engine import TranscriptionEngine
 from src.whisperdesk.core.translation.translator import Translator
@@ -34,6 +35,9 @@ class AppController(QObject):
     def __init__(self):
         super().__init__()
 
+        self.settings_manager = SettingsManager()
+        settings = self.settings_manager.settings
+
         self.recorder = AudioRecorder()
         self.recorder.on_level = self._on_level
 
@@ -42,10 +46,10 @@ class AppController(QObject):
         self._mode = None
 
         print("Loading Whisper model...")
-        self.engine = TranscriptionEngine(model_size="base")
+        self.engine = TranscriptionEngine(model_size=settings.whisper_model_size)
 
         print("Loading translator...")
-        self.translator = Translator(from_code="en", to_code="ar")
+        self.translator = Translator(from_code="en", to_code=settings.translation_target_language)
 
         self.injector = TextInjector()
 
@@ -57,11 +61,11 @@ class AppController(QObject):
         print("Loading RAG pipeline...")
         self.rag = RAGPipeline()
 
-        self.dictate_hotkey = HotkeyManager(hotkey="<cmd>+<shift>+<space>")
+        self.dictate_hotkey = HotkeyManager(hotkey=settings.dictate_hotkey)
         self.dictate_hotkey.on_activate = self._on_dictate_press
         self.dictate_hotkey.on_deactivate = self._on_dictate_release
 
-        self.query_hotkey = HotkeyManager(hotkey="<cmd>+<shift>+a")
+        self.query_hotkey = HotkeyManager(hotkey=settings.query_hotkey)
         self.query_hotkey.on_activate = self._on_query_press
         self.query_hotkey.on_deactivate = self._on_query_release
 
@@ -93,7 +97,9 @@ class AppController(QObject):
 
         text_en = self.engine.transcribe(audio, sample_rate=self.recorder.sample_rate)
         text_en = self.expander.expand(text_en)
-        text_ar = self.translator.translate(text_en) if text_en else ""
+        text_ar = ""
+        if text_en and self.settings_manager.settings.translation_enabled:
+            text_ar = self.translator.translate(text_en)
 
         print(f"  EN: {text_en}")
         print(f"  AR: {text_ar}")
