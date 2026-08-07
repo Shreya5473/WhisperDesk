@@ -36,10 +36,16 @@ def main():
     overlay = RecordingOverlay()
     controller = AppController()
 
+    # Dictation flow
     controller.recording_started.connect(overlay.show_at_bottom_center)
     controller.level_changed.connect(overlay.update_level)
-    controller.recording_stopped.connect(overlay.show_transcribing)
+    controller.recording_stopped.connect(lambda: overlay.show_transcribing("Transcribing..."))
     controller.transcript_ready.connect(lambda text: overlay.hide_overlay())
+
+    # Voice query (RAG) flow -- reuses the same overlay, different labels
+    controller.query_started.connect(overlay.show_at_bottom_center)
+    controller.query_thinking.connect(lambda: overlay.show_transcribing("Thinking..."))
+    controller.query_answered.connect(lambda answer: overlay.hide_overlay())
 
     tray = QSystemTrayIcon(make_tray_icon())
     tray.setToolTip("WhisperDesk")
@@ -52,13 +58,11 @@ def main():
     tray.show()
 
     controller.start()
-    print("WhisperDesk running. Hold Cmd+Shift+Space to dictate.")
+    print("WhisperDesk running.")
+    print("  Hold Cmd+Shift+Space to dictate.")
+    print("  Hold Cmd+Shift+A to ask a question about your notes.")
 
     sys.exit(app.exec())
-
-
-if __name__ == "__main__":
-    main()
 
 
 if __name__ == "__main__":

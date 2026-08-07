@@ -114,9 +114,9 @@ class RecordingOverlay(QDialog):
         self.raise_()
         self.activateWindow()
 
-    def show_transcribing(self) -> None:
+    def show_transcribing(self, message: str = "Transcribing...") -> None:
         self._pulse_timer.stop()
-        self.status_label.setText("Transcribing...")
+        self.status_label.setText(message)
         self.meter.set_level(0.0)
 
     def hide_overlay(self) -> None:
