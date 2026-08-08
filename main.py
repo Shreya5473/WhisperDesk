@@ -10,6 +10,7 @@ from PyQt6.QtCore import Qt, QTimer
 
 from src.whisperdesk.frontend.recording_overlay import RecordingOverlay
 from src.whisperdesk.frontend.controller import AppController
+from src.whisperdesk.frontend.settings_window import SettingsWindow
 
 
 def make_tray_icon() -> QIcon:
@@ -51,7 +52,18 @@ def main():
     tray.setToolTip("WhisperDesk")
     tray.setVisible(True)
 
+    settings_window_ref = {"window": None}
+
+    def open_settings():
+        # Keep a reference so the window isn't garbage-collected
+        # immediately after opening (a common PyQt gotcha).
+        settings_window_ref["window"] = SettingsWindow(controller.settings_manager)
+        settings_window_ref["window"].show()
+
     menu = QMenu()
+    settings_action = menu.addAction("Settings...")
+    settings_action.triggered.connect(open_settings)
+    menu.addSeparator()
     quit_action = menu.addAction("Quit WhisperDesk")
     quit_action.triggered.connect(app.quit)
     tray.setContextMenu(menu)
