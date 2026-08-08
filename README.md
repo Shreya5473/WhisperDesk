@@ -132,8 +132,6 @@ Two hotkeys trigger two different pipelines that share the same underlying `Audi
 ```
 whisperdesk/
 ├── .github/workflows/ci.yml     # GitHub Actions test pipeline
-├── docs/
-│   └── architecture.svg          # Architecture diagram
 ├── src/whisperdesk/
 │   ├── core/
 │   │   ├── audio/
