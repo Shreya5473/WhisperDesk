@@ -106,8 +106,6 @@ Settings persist as JSON at `~/.whisperdesk/settings.json`, with automatic fallb
 
 ## Architecture
 
-![WhisperDesk architecture diagram](docs/architecture.svg)
-
 The app is built with a strict **layered architecture**: all business logic lives in `core/`, completely decoupled from the GUI. Every core feature — audio recording, transcription, translation, the entire RAG pipeline — can be run and tested headlessly via the `test_*.py` scripts in the project root, with zero dependency on PyQt6 or the GUI ever being involved. The GUI (`frontend/`) is a thin layer that only wires signals from `core/` components to visual updates.
 
 Two hotkeys trigger two different pipelines that share the same underlying `AudioRecorder` and `TranscriptionEngine`:
